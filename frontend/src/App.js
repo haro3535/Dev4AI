@@ -4,8 +4,10 @@ import "bootstrap/dist/css/bootstrap.min.css";
 function App() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
+  const [showTimeModal, setShowTimeModal] = useState(false);
+  const [selectedHour, setSelectedHour] = useState(null);
+  const [selectedMinute, setSelectedMinute] = useState(null);
 
-  // Saat güncellemesi için bir efekt
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date().toLocaleTimeString());
@@ -15,18 +17,69 @@ function App() {
   }, []);
 
   const toggleTableSelection = (tableId) => {
-    setSelectedTable((prevSelected) => (prevSelected === tableId ? null : tableId));
+    setSelectedTable(tableId);
+    setShowTimeModal(true);
+    setSelectedHour(null); // İlk başta saat seçimini sıfırla
+    setSelectedMinute(null); // Dakika seçimini sıfırla
+  };
+
+  const handleHourSelection = (hour) => {
+    setSelectedHour(hour); // Saat seçildiğinde güncellenir
+  };
+
+  const handleMinuteSelection = (minute) => {
+    setSelectedMinute(minute); // Dakika seçildiğinde güncellenir
+    setShowTimeModal(false); // Modalı kapat
   };
 
   const handleSelection = () => {
-    if (selectedTable) {
-      alert(`Seçilen Masa: Table ${selectedTable}`);
+    if (selectedTable && selectedHour && selectedMinute) {
+      alert(`Table ${selectedTable} at ${selectedHour}:${selectedMinute} selected.`);
+      sendPostRequest(selectedTable, `${selectedHour}:${selectedMinute}`);
     } else {
-      alert("Hiçbir masa seçilmedi!");
+      alert("Please select a table, hour, and minute!");
+    }
+  };
+
+  const resetSelection = () => {
+    setSelectedTable(null);
+    setSelectedHour(null);
+    setSelectedMinute(null);
+    setShowTimeModal(false);
+  };
+
+  const sendPostRequest = async (table, time) => {
+    const url = "https://example.com/api/tables"; // API URL
+    const data = {
+      tableId: table,
+      time,
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Success: ${JSON.stringify(result)}`);
+      } else {
+        alert(`Error: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error during POST request:", error);
+      alert("Error during POST request.");
     }
   };
 
   const tables = Array.from({ length: 100 }, (_, i) => i + 1);
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")); // 00 - 23 saatleri
+  const minutes = ["00", "10", "20", "30", "40", "50"]; // Dakika dilimleri
 
   return (
     <div className="container mt-5">
@@ -43,7 +96,7 @@ function App() {
                 marginRight: "10px",
               }}
             ></div>
-            <span>Boş</span>
+            <span>Available</span>
             <div
               style={{
                 width: "20px",
@@ -52,7 +105,7 @@ function App() {
                 margin: "0 10px",
               }}
             ></div>
-            <span>Dolu</span>
+            <span>Occupied</span>
           </div>
         </div>
       </div>
@@ -87,9 +140,56 @@ function App() {
       </div>
       <div className="text-center mt-4">
         <button className="btn btn-primary" onClick={handleSelection}>
-          Seç
+          Confirm
         </button>
       </div>
+
+      {/* Time Selection Modal */}
+      {showTimeModal && (
+        <div
+          className="modal d-block"
+          tabIndex="-1"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+          }}
+        >
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Select {selectedHour ? "Minute" : "Hour"}</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => resetSelection()}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="d-flex flex-wrap">
+                  {!selectedHour
+                    ? hours.map((hour) => (
+                        <button
+                          key={hour}
+                          className="btn btn-outline-primary m-2"
+                          onClick={() => handleHourSelection(hour)}
+                        >
+                          {hour}:00
+                        </button>
+                      ))
+                    : minutes.map((minute) => (
+                        <button
+                          key={minute}
+                          className="btn btn-outline-primary m-2"
+                          onClick={() => handleMinuteSelection(minute)}
+                        >
+                          {selectedHour}:{minute}
+                        </button>
+                      ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
