@@ -1,11 +1,9 @@
 import React, { useState } from "react";
-import "./App.css";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 function App() {
-  // State to track selected tables
   const [selectedTables, setSelectedTables] = useState([]);
 
-  // Toggle table selection
   const toggleTableSelection = (tableId) => {
     setSelectedTables((prevSelected) =>
       prevSelected.includes(tableId)
@@ -14,27 +12,25 @@ function App() {
     );
   };
 
-  // Generate 100 tables
   const tables = Array.from({ length: 100 }, (_, i) => i + 1);
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Library Tables</h1>
-        <div className="grid">
-          {tables.map((table) => (
-            <div
-              key={table}
-              className={`table ${
-  selectedTables.includes(table) ? "selected" : ""}
-              }`}
-              onClick={() => toggleTableSelection(table)}
-            >
-              Table {table}
-            </div>
-          ))}
-        </div>
-      </header>
+    <div className="container mt-5">
+      <h1>Library Tables</h1>
+      <div className="row">
+        {tables.map((table) => (
+          <div
+            key={table}
+            className={`col-1 p-2 m-3 border ${
+              selectedTables.includes(table) ? "bg-success text-white" : "bg-light"
+            }`}
+            onClick={() => toggleTableSelection(table)}
+            style={{ cursor: "pointer" }}
+          >
+            Table {table}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
