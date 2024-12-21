@@ -2,6 +2,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 import sqlite3
+import threading
+import time
 from datetime import datetime, timedelta
 
 def check_unavailable_desks(start_time):
@@ -12,6 +14,42 @@ def check_unavailable_desks(start_time):
             unavailable_desks.append(i)
 
     return unavailable_desks
+
+# Function to delete expired desk data
+def delete_expired_desk_data():
+    while True:
+        try:
+            # Connect to the SQLite database
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+
+            # Get the current time
+            current_time = datetime.now()
+
+            # SQL query to delete rows where end_time is less than the current time
+            query = '''
+                DELETE FROM desk_data WHERE end_time < ?
+            '''
+
+            # Execute the query with the current time
+            cursor.execute(query, (current_time,))
+
+            # Commit the changes
+            connection.commit()
+
+            # Close the connection
+            connection.close()
+        except Exception as e:
+            print(f"Error deleting expired desk data: {e}")
+
+        # Wait for 10 seconds before checking again
+        time.sleep(10)
+
+# Start the background thread
+thread = threading.Thread(target=delete_expired_desk_data)
+thread.daemon = True
+thread.start()
+
 
 #TODO: add deletion of the data
 def delete_desk_data(data):
