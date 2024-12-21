@@ -7,6 +7,7 @@ function App() {
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [selectedHour, setSelectedHour] = useState(null);
   const [selectedMinute, setSelectedMinute] = useState(null);
+  const [isStartTime, setIsStartTime] = useState(true); // New state to track if selecting start or end time
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -18,26 +19,30 @@ function App() {
 
   const toggleTableSelection = (tableId) => {
     setSelectedTable(tableId);
-    setShowTimeModal(true);
-    setSelectedHour(null); // İlk başta saat seçimini sıfırla
-    setSelectedMinute(null); // Dakika seçimini sıfırla
   };
 
   const handleHourSelection = (hour) => {
-    setSelectedHour(hour); // Saat seçildiğinde güncellenir
+    setSelectedHour(hour); // Update when hour is selected
   };
 
   const handleMinuteSelection = (minute) => {
-    setSelectedMinute(minute); // Dakika seçildiğinde güncellenir
-    setShowTimeModal(false); // Modalı kapat
+    const time = `${selectedHour}:${minute}`;
+    if (isStartTime) {
+      alert(`Start time for table ${selectedTable} is ${time}`);
+    } else {
+      alert(`End time for table ${selectedTable} is ${time}`);
+    }
+    setShowTimeModal(false); // Close modal
   };
 
-  const handleSelection = () => {
-    if (selectedTable && selectedHour && selectedMinute) {
-      alert(`Table ${selectedTable} at ${selectedHour}:${selectedMinute} selected.`);
-      sendPostRequest(selectedTable, `${selectedHour}:${selectedMinute}`);
+  const handleTimeSelection = (isStart) => {
+    if (selectedTable) {
+      setIsStartTime(isStart);
+      setShowTimeModal(true);
+      setSelectedHour(null); // Reset hour selection initially
+      setSelectedMinute(null); // Reset minute selection
     } else {
-      alert("Please select a table, hour, and minute!");
+      alert("Please select a table first!");
     }
   };
 
@@ -48,38 +53,9 @@ function App() {
     setShowTimeModal(false);
   };
 
-  const sendPostRequest = async (table, time) => {
-    const url = "https://example.com/api/tables"; // API URL
-    const data = {
-      tableId: table,
-      time,
-      timestamp: new Date().toISOString(),
-    };
-
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        alert(`Success: ${JSON.stringify(result)}`);
-      } else {
-        alert(`Error: ${response.status}`);
-      }
-    } catch (error) {
-      console.error("Error during POST request:", error);
-      alert("Error during POST request.");
-    }
-  };
-
   const tables = Array.from({ length: 100 }, (_, i) => i + 1);
-  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")); // 00 - 23 saatleri
-  const minutes = ["00", "10", "20", "30", "40", "50"]; // Dakika dilimleri
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")); // 00 - 23 hours
+  const minutes = ["00", "10", "20", "30", "40", "50"]; // Minute intervals
 
   return (
     <div className="container mt-5">
@@ -139,8 +115,11 @@ function App() {
         ))}
       </div>
       <div className="text-center mt-4">
-        <button className="btn btn-primary" onClick={handleSelection}>
-          Confirm
+        <button className="btn btn-primary" onClick={() => handleTimeSelection(true)}>
+          Select Start Time
+        </button>
+        <button className="btn btn-secondary ms-2" onClick={() => handleTimeSelection(false)}>
+          Select End Time
         </button>
       </div>
 
