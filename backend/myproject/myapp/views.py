@@ -2,12 +2,12 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 import sqlite3
-
+from datetime import datetime, timedelta
 
 def check_unavailable_desks(start_time):
     unavailable_desks = []
 
-    for i in range(1, 101):
+    for i in range(1, 100):
         if not is_desk_available(start_time, start_time):
             unavailable_desks.append(i)
 
@@ -60,6 +60,20 @@ def delete_desk_data(data):
             'error': 'An unexpected error occurred'
         }, 500
 
+def generate_hourly_times():
+    times = []
+    start_time = datetime.strptime("00:00", "%H:%M")
+    for hour in range(24):
+        times.append(start_time + timedelta(hours=hour))
+    return times
+
+def check_unavailable_times(desk_index):
+    unavailable_times = []
+    times = generate_hourly_times()
+    for time in times:
+        if not is_desk_available(time, time):
+            unavailable_times.append(time)
+    return unavailable_times
 
 def update_desk_data(data):
     """
@@ -157,7 +171,7 @@ def is_desk_available(start_time, end_time):
         return False
 
 
-def handle_desk_post_request(request):
+def handle_post_request(request):
     """
     Handles POST requests for desk reservation data.
     """
@@ -166,9 +180,23 @@ def handle_desk_post_request(request):
             # Parse JSON data from the request body
             data = json.loads(request.body.decode('utf-8'))
             
-            #TODO: update the function
-            response_data, status_code = update_desk_data(data), 200
-            return JsonResponse(response_data, status=status_code)
+            if data['type'] == 'table_resevation':
+                if is_desk_available(data['start_time'], data['end_time'], data['desk_index']):
+                    response_data, status_code = update_desk_data(data)
+                    return JsonResponse(response_data, status=status_code)
+                else:
+                    response_data, status_code = {'error': 'Desk not available'}, 400
+                    return JsonResponse(response_data, status=status_code)
+            elif data['type'] == 'filter_selection':
+                response_data, status_code = check_unavailable_desks(data['start_time']), 200
+                return JsonResponse(response_data, status=status_code)
+            elif data['type'] == '':
+                response_data, status_code = check_unavailable_times(data['desk_index']), 200
+                return JsonResponse(response_data, status=status_code)
+            else:
+                response_data, status_code = {'error': 'Invalid request type'}, 400
+            
+
         
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format'}, status=400)
@@ -179,25 +207,4 @@ def handle_desk_post_request(request):
     
     return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
 
-@csrf_exempt
-def handle_filter_post_request(request):
-    """
-    Handles POST requests for desk reservation data.
-    """
-    if request.method == 'POST':
-        try:
-            # Parse JSON data from the request body
-            data = json.loads(request.body.decode('utf-8'))
-            
-            # Process the data using the utility method
-            response_data, status_code = check_unavailable_desks(data['start_time']), 200
-            return JsonResponse(response_data, status=status_code)
-        
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
-        
-        except Exception as e:
-            # Generic error handling
-            return JsonResponse({'error': f'An unexpected error occurred: {str(e)}'}, status=500)
-    
-    return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+
