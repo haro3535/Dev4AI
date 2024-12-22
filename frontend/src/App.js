@@ -15,7 +15,7 @@ function App() {
   const [takenTables, setTakenTables] = useState([]); // Dynamically updated
   const maxHour = 3;
 
-  const takenHours = ["16:00", "16:10", "16:20", "16:30", "16:40", "16:50", "17:10"];
+  const [takenHours, setTakenHours] = useState([]); // Dynamically updated
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -49,7 +49,7 @@ function App() {
   }, []);
   
 
-  const toggleTableSelection = (tableId) => {
+  const toggleTableSelection = async (tableId) => {
     if (!takenTables.includes(tableId)) {
       setSelectedTable(tableId);
       setStartTime(null);
@@ -57,6 +57,26 @@ function App() {
       setSelectedHour(null);
       setSelectedMinute(null);
     }
+
+    try{
+        const response = await fetch("http://localhost:8000/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ type: "check_table_by_index", desk_index: tableId }),
+        });
+        if (response.ok) {
+          const rawData = await response.json();
+          setTakenHours(rawData.array);
+          console.log(rawData.array);
+        } else {
+          console.error("Failed to fetch table status.");
+        }
+    }
+    catch (error) {
+      console.error("Error fetching table status:", error);
+    } 
   };
 
   const handleHourSelection = (hour) => {

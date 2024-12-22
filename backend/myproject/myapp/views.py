@@ -10,7 +10,7 @@ def check_unavailable_desks(start_time):
     unavailable_desks = []
 
     for i in range(1, 100):
-        if not is_desk_available(start_time, start_time):
+        if not is_desk_available(start_time, start_time,i):
             unavailable_desks.append(i)
 
     return unavailable_desks
@@ -98,19 +98,21 @@ def delete_desk_data(data):
             'error': 'An unexpected error occurred'
         }, 500
 
-def generate_hourly_times():
+def generate_custom_times():
     times = []
     start_time = datetime.strptime("00:00", "%H:%M")
-    for hour in range(24):
-        times.append(start_time + timedelta(hours=hour))
+    for i in range(24 * 6):  # 24 hours * 6 steps per hour (10-minute increments)
+        times.append(start_time.strftime("%H.%M"))
+        start_time += timedelta(minutes=10)
     return times
 
 def check_unavailable_times(desk_index):
     unavailable_times = []
-    times = generate_hourly_times()
+    times = generate_custom_times()
     for time in times:
-        if not is_desk_available(time, time):
+        if not is_desk_available(time,time, desk_index):
             unavailable_times.append(time)
+    unavailable_times = ["16.10","16.20","16.30","16.40","16.50","17.10"]
     return unavailable_times
 
 def update_desk_data(data):
@@ -161,7 +163,7 @@ def update_desk_data(data):
 
 
 
-def is_desk_available(start_time, end_time):
+def is_desk_available(start_time, end_time, desk_index):
     """
     Checks if a desk is available based on the given start and end times.
 
@@ -183,14 +185,14 @@ def is_desk_available(start_time, end_time):
         query = '''
             SELECT EXISTS (
                 SELECT 1 FROM desk_data 
-                WHERE (start_time < ? AND end_time > ?) 
+                WHERE ((start_time < ? AND end_time > ?) 
                    OR (start_time < ? AND end_time > ?)
-                   OR (start_time >= ? AND end_time <= ?)
+                   OR (start_time >= ? AND end_time <= ?)) AND desk_index = ?
             );
         '''
         
         # Execute the query with parameter substitution
-        cursor.execute(query, (end_time, start_time, start_time, end_time, start_time, end_time))
+        cursor.execute(query, (end_time, start_time, start_time, end_time, start_time, end_time, desk_index))
         
         result = cursor.fetchone()
         
@@ -230,9 +232,9 @@ def handle_request(request):
             elif data['type'] == 'filter_selection':
                 response_data, status_code = check_unavailable_desks(data['start_time']), 200
                 return JsonResponse(response_data, status=status_code)
-            elif data['type'] == '':
+            elif data['type'] == 'check_table_by_index':
                 response_data, status_code = check_unavailable_times(data['desk_index']), 200
-                return JsonResponse(response_data, status=status_code)
+                return JsonResponse({"array": response_data}, status=status_code)
             else:
                 response_data, status_code = {'error': 'Invalid request type'}, 400
             
