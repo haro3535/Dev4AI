@@ -128,21 +128,26 @@ function App() {
     const time = `${selectedHour}:${minute}`;
     if (isStartTime) {
       setStartTime(time);
+      setShowTimeModal(false);
     } else {
       setEndTime(time);
+      setShowTimeModal(false);
+  }
+  };
 
-      if (startTime && time) {
-        const confirmed = window.confirm(
-          `Do you confirm the appointment for Table ${selectedTable} from ${startTime} to ${time}?`
-        );
-        if (confirmed) {
-          handlePostRequest();
-        } else {
-          resetSelection();
-        }
+  const confirmationWithPost = () => {
+    if (startTime && endTime) {
+      const confirmed = window.confirm(
+        `Do you confirm the appointment for Table ${selectedTable} from ${startTime} to ${endTime}?`
+      );
+      if (confirmed) {
+        handlePostRequest();
+      } else {
+        resetSelection();
       }
+    } else {
+      alert("Please select start and end times!");
     }
-    setShowTimeModal(false);
   };
 
   const handleTimeSelection = (isStart) => {
@@ -268,6 +273,9 @@ function App() {
         </button>
         <button className="btn btn-secondary ms-2" onClick={() => handleTimeSelection(false)}>
           Select End Time
+        </button>
+        <button className="btn btn-success ms-4" onClick={confirmationWithPost}>
+          Confirm
         </button>
       </div>
 
