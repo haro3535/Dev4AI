@@ -4,6 +4,63 @@ import json
 import sqlite3
 
 
+def check_unavailable_desks(start_time):
+    unavailable_desks = []
+
+    for i in range(1, 101):
+        if not is_desk_available(start_time, start_time):
+            unavailable_desks.append(i)
+
+    return unavailable_desks
+
+#TODO: add deletion of the data
+def delete_desk_data(data):
+    """
+    Deletes the desk_data table with the provided data.
+
+    Args:
+        data (dict): JSON payload from the request.
+
+    Returns:
+        dict: Response data with the updated information.
+    """
+    try:
+        # Connect to the SQLite database
+        connection = sqlite3.connect('db.sqlite3')
+        cursor = connection.cursor()
+
+        # SQL query to update the desk_data table
+        query = '''
+            DELETE FROM desk_data WHERE studentID = ? AND desk_index = ?
+        '''
+
+        # Execute the query with parameter substitution
+        cursor.execute(query, (data['studentID'], data['desk_index']))
+
+        # Commit the changes
+        connection.commit()
+
+        # Close the connection
+        connection.close()
+
+        return {
+            'message': 'Data deleted successfully',
+            'data': data
+        }, 200
+
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return {
+            'error': 'An error occurred while deleting the data'
+        }, 500
+
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return {
+            'error': 'An unexpected error occurred'
+        }, 500
+
+
 def update_desk_data(data):
     """
     Updates the desk_data table with the provided data.
@@ -69,6 +126,8 @@ def is_desk_available(start_time, end_time):
         cursor = connection.cursor()
 
         # SQL query to check for overlapping reservations
+
+        #TODO the condition should be updated
         query = '''
             SELECT EXISTS (
                 SELECT 1 FROM desk_data 
@@ -97,34 +156,31 @@ def is_desk_available(start_time, end_time):
         print(f"Unexpected error: {e}")
         return False
 
-# Utility method to process data
-def process_desk_data(data):
+
+def handle_desk_post_request(request):
     """
-    Processes desk reservation data from a POST request.
-
-    Args:
-        data (dict): JSON payload from the request.
-
-    Returns:
-        dict: Response data with processed information.
+    Handles POST requests for desk reservation data.
     """
+    if request.method == 'POST':
+        try:
+            # Parse JSON data from the request body
+            data = json.loads(request.body.decode('utf-8'))
+            
+            #TODO: update the function
+            response_data, status_code = update_desk_data(data), 200
+            return JsonResponse(response_data, status=status_code)
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+        
+        except Exception as e:
+            # Generic error handling
+            return JsonResponse({'error': f'An unexpected error occurred: {str(e)}'}, status=500)
     
+    return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
 
-    # Check if the desk is available
-    if not is_desk_available(data.get['start_time'], data.get['end_time']):
-        return {
-            'error': 'Desk not available for the specified time period'
-        }, 400
-    
-
-    
-    # Update the desk data
-    response_data, status_code = update_desk_data(data)
-    
-    return response_data, status_code
-
-
-def handle_post_request(request):
+@csrf_exempt
+def handle_filter_post_request(request):
     """
     Handles POST requests for desk reservation data.
     """
@@ -134,7 +190,7 @@ def handle_post_request(request):
             data = json.loads(request.body.decode('utf-8'))
             
             # Process the data using the utility method
-            response_data, status_code = process_desk_data(data)
+            response_data, status_code = check_unavailable_desks(data['start_time']), 200
             return JsonResponse(response_data, status=status_code)
         
         except json.JSONDecodeError:
