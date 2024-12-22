@@ -16,6 +16,7 @@ function App() {
   const maxHour = 3;
 
   const takenHours = ["16:00", "16:10", "16:20", "16:30", "16:40", "16:50", "17:10"];
+  const takenMinutes = [];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -47,21 +48,38 @@ function App() {
 
     return () => clearInterval(interval);
   }, []);
-  
 
-  const toggleTableSelection = (tableId) => {
+
+  function toggleTableSelection(tableId) {
     if (!takenTables.includes(tableId)) {
       setSelectedTable(tableId);
       setStartTime(null);
       setEndTime(null);
       setSelectedHour(null);
       setSelectedMinute(null);
+      
     }
-  };
+  }
 
   const handleHourSelection = (hour) => {
     setSelectedHour(hour);
   };
+
+  const handleMinuteSelection = (minute) => {
+    setSelectedMinute(minute);
+    const time = `${selectedHour}:${minute}`;
+    
+    if (isStartTime) {
+      setStartTime(time);
+      console.log(startTime);
+      setShowTimeModal(false);
+    } else {
+      setEndTime(time);
+      console.log(endTime);
+      setShowTimeModal(false);
+  }
+  };
+
 
   const handlePostRequest = async () => {
     const data = {
@@ -124,16 +142,6 @@ function App() {
     }
   };
 
-  const handleMinuteSelection = (minute) => {
-    const time = `${selectedHour}:${minute}`;
-    if (isStartTime) {
-      setStartTime(time);
-      setShowTimeModal(false);
-    } else {
-      setEndTime(time);
-      setShowTimeModal(false);
-  }
-  };
 
   const confirmationWithPost = () => {
     if (startTime && endTime) {
