@@ -28,7 +28,7 @@ function App() {
   // Fetch table statuses from the server
   const fetchTableStatuses = async () => {
     try {
-      const response = await fetch("https://your-api-endpoint.com/get-tables");
+      const response = await fetch("http://localhost:8000/");
       if (response.ok) {
         const rawData = await response.json();
   
@@ -76,7 +76,7 @@ function App() {
     };
 
     try {
-      const response = await fetch("https://your-api-endpoint.com/endpoint", {
+      const response = await fetch("http://localhost:8000/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -105,7 +105,7 @@ function App() {
     };
 
     try {
-      const response = await fetch("https://your-api-endpoint.com/endpoint", {
+      const response = await fetch("http://localhost:8000/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
