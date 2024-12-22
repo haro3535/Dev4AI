@@ -7,14 +7,15 @@ function App() {
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [selectedHour, setSelectedHour] = useState(null);
   const [selectedMinute, setSelectedMinute] = useState(null);
-  const [isStartTime, setIsStartTime] = useState(true); // New state to track if selecting start or end time
-  const [showFilterModal, setShowFilterModal] = useState(false); // New state for filter modal
-  const [filterTime, setFilterTime] = useState(null); // New state for filter time
-  const [startTime, setStartTime] = useState(null); // New state for start time
-  const maxHour = 3; // Maximum allowed hours
+  const [isStartTime, setIsStartTime] = useState(true);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filterTime, setFilterTime] = useState(null);
+  const [startTime, setStartTime] = useState(null);
+  const [endTime, setEndTime] = useState(null);
+  const [takenTables, setTakenTables] = useState([]); // Dynamically updated
+  const maxHour = 3;
 
-  const takenTables = [60]; // Example array of taken tables
-  const takenHours = ["16:00", "16:10", "16:20", "16:30", "16:40", "16:50", "17:10"]; // Example array of taken hours
+  const takenHours = ["16:00", "16:10", "16:20", "16:30", "16:40", "16:50", "17:10"];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -24,39 +25,135 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // Fetch table statuses from the server
+  const fetchTableStatuses = async () => {
+    try {
+      const response = await fetch("https://your-api-endpoint.com/get-tables");
+      if (response.ok) {
+        const rawData = await response.json();
+  
+        // Başına 'type: data-id' ekleyerek veriyi dönüştür
+        const data = {
+          ...rawData,
+          "type": "data-id", // Eklenen alan
+        };
+  
+        setTakenTables(data.takenTables); // Güncellenen data ile işlem yap
+      } else {
+        console.error("Failed to fetch table statuses.");
+      }
+    } catch (error) {
+      console.error("Error fetching table statuses:", error);
+    }
+  };
+  
+
+  // Fetch table statuses on component mount
+  useEffect(() => {
+    fetchTableStatuses();
+  }, []);
+
   const toggleTableSelection = (tableId) => {
     if (!takenTables.includes(tableId)) {
       setSelectedTable(tableId);
-      setStartTime(null); // Reset start time
-      setSelectedHour(null); // Reset hour selection
-      setSelectedMinute(null); // Reset minute selection
+      setStartTime(null);
+      setEndTime(null);
+      setSelectedHour(null);
+      setSelectedMinute(null);
     }
   };
 
   const handleHourSelection = (hour) => {
-    setSelectedHour(hour); // Update when hour is selected
+    setSelectedHour(hour);
+  };
+
+  const handlePostRequest = async () => {
+    const data = {
+      type: "table_reservation",
+      selectedTable,
+      startTime,
+      endTime,
+    };
+
+    try {
+      const response = await fetch("https://your-api-endpoint.com/endpoint", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert("Data sent successfully!");
+        console.log("Response:", result);
+        fetchTableStatuses(); // Refresh table statuses after reservation
+      } else {
+        alert("Failed to send data.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("An error occurred while sending data.");
+    }
+  };
+
+  const handleFilterPostRequest = async (selectedFilterTime) => {
+    const data = {
+      type: "filter_selection",
+      filterTime: selectedFilterTime,
+    };
+
+    try {
+      const response = await fetch("https://your-api-endpoint.com/endpoint", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Filter time ${selectedFilterTime}:00 sent successfully!`);
+        console.log("Response:", result);
+        fetchTableStatuses(); // Refresh table statuses after filter selection
+      } else {
+        alert("Failed to send filter time.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("An error occurred while sending filter time.");
+    }
   };
 
   const handleMinuteSelection = (minute) => {
     const time = `${selectedHour}:${minute}`;
     if (isStartTime) {
       setStartTime(time);
-      alert(`Start time for table ${selectedTable} is ${time}`);
     } else {
-      alert(`End time for table ${selectedTable} is ${time}`);
+      setEndTime(time);
+
+      if (startTime && time) {
+        const confirmed = window.confirm(
+          `Do you confirm the appointment for Table ${selectedTable} from ${startTime} to ${time}?`
+        );
+        if (confirmed) {
+          handlePostRequest();
+        } else {
+          resetSelection();
+        }
+      }
     }
-    setShowTimeModal(false); // Close modal
+    setShowTimeModal(false);
   };
 
   const handleTimeSelection = (isStart) => {
     if (selectedTable) {
       setIsStartTime(isStart);
       setShowTimeModal(true);
-      setSelectedHour(null); // Reset hour selection initially
-      setSelectedMinute(null); // Reset minute selection
-      if (isStart) {
-        setStartTime(null); // Reset start time if selecting start time
-      }
+      setSelectedHour(null);
+      setSelectedMinute(null);
     } else {
       alert("Please select a table first!");
     }
@@ -64,10 +161,11 @@ function App() {
 
   const resetSelection = () => {
     setSelectedTable(null);
+    setStartTime(null);
+    setEndTime(null);
     setSelectedHour(null);
     setSelectedMinute(null);
     setShowTimeModal(false);
-    setStartTime(null);
   };
 
   const closeModal = () => {
@@ -75,13 +173,13 @@ function App() {
   };
 
   const tables = Array.from({ length: 100 }, (_, i) => i + 1);
-  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")); // 00 - 23 hours
-  const minutes = ["00", "10", "20", "30", "40", "50"]; // Minute intervals
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+  const minutes = ["00", "10", "20", "30", "40", "50"];
 
   const isTimeSelectable = (hour, minute) => {
     const timeString = `${String(hour).padStart(2, "0")}:${minute}`;
     if (takenHours.includes(timeString)) return false;
-  
+
     if (!startTime) return true;
     const [startHour, startMinute] = startTime.split(":").map(Number);
     const selectedTime = new Date();
@@ -140,7 +238,11 @@ function App() {
               <div
                 key={table}
                 className={`border rounded ${
-                  selectedTable === table ? "bg-success text-white" : takenTables.includes(table) ? "bg-danger text-white" : "bg-light"
+                  selectedTable === table
+                    ? "bg-success text-white"
+                    : takenTables.includes(table)
+                    ? "bg-danger text-white"
+                    : "bg-light"
                 }`}
                 onClick={() => toggleTableSelection(table)}
                 style={{
@@ -248,6 +350,7 @@ function App() {
                       className="btn btn-outline-primary m-2"
                       onClick={() => {
                         setFilterTime(hour);
+                        handleFilterPostRequest(hour);
                         setShowFilterModal(false);
                       }}
                     >
