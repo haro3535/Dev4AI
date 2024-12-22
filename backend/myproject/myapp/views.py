@@ -209,16 +209,16 @@ def is_desk_available(start_time, end_time):
         return False
 
 @csrf_exempt
-def handle_post_request(request):
+def handle_request(request):
     """
     Handles POST requests for desk reservation data.
 
     """
     if request.method == 'POST':
-        return JsonResponse({'message': 'Only POST requests are allowed'}, status=200)
         try:
             # Parse JSON data from the request body
             data = json.loads(request.body.decode('utf-8'))
+            print(data)
             
             if data['type'] == 'table_reservation':
                 if is_desk_available(data['start_time'], data['end_time'], data['desk_index']):
@@ -244,7 +244,10 @@ def handle_post_request(request):
         except Exception as e:
             # Generic error handling
             return JsonResponse({'error': f'An unexpected error occurred: {str(e)}'}, status=500)
+    elif request.method == 'GET':
+        return JsonResponse({'array': [5,6,7]}, status=200)
+    else:
+        return JsonResponse({'error': 'Only POST and GET requests are allowed'}, status=405)
     
-    return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
 
 

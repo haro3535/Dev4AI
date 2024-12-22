@@ -31,14 +31,8 @@ function App() {
       const response = await fetch("http://localhost:8000/");
       if (response.ok) {
         const rawData = await response.json();
-  
-        // Başına 'type: data-id' ekleyerek veriyi dönüştür
-        const data = {
-          ...rawData,
-          "type": "data-id", // Eklenen alan
-        };
-  
-        setTakenTables(data.takenTables); // Güncellenen data ile işlem yap
+        setTakenTables(rawData.array);
+        console.log("Table statuses fetched successfully:", rawData);
       } else {
         console.error("Failed to fetch table statuses.");
       }
@@ -46,12 +40,14 @@ function App() {
       console.error("Error fetching table statuses:", error);
     }
   };
-  
 
-  // Fetch table statuses on component mount
   useEffect(() => {
     fetchTableStatuses();
+    const interval = setInterval(fetchTableStatuses, 60000); // Fetch every 60 seconds
+
+    return () => clearInterval(interval);
   }, []);
+  
 
   const toggleTableSelection = (tableId) => {
     if (!takenTables.includes(tableId)) {
@@ -74,6 +70,7 @@ function App() {
       startTime,
       endTime,
     };
+    console.log(data);
 
     try {
       const response = await fetch("http://localhost:8000/", {
