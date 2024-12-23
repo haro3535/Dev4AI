@@ -84,9 +84,9 @@ function App() {
   const handlePostRequest = async () => {
     const data = {
       type: "table_reservation",
-      selectedTable,
-      startTime,
-      endTime,
+      selectedTable: selectedTable,
+      startTime: startTime,
+      endTime:endTime,
     };
     console.log(data);
 

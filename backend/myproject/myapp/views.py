@@ -5,12 +5,19 @@ import sqlite3
 import threading
 import time
 from datetime import datetime, timedelta
+import random
 
 def check_unavailable_desks(start_time):
+    # Convert start_time to datetime
+
+    
+    start_time = datetime.strptime(start_time, "%H")
     unavailable_desks = []
 
+    print(start_time)
+
     for i in range(1, 100):
-        if not is_desk_available(start_time, start_time,i):
+        if not is_desk_available(start_time, start_time, i):
             unavailable_desks.append(i)
 
     return unavailable_desks
@@ -46,57 +53,12 @@ def delete_expired_desk_data():
         time.sleep(10)
 
 # Start the background thread
-thread = threading.Thread(target=delete_expired_desk_data)
-thread.daemon = True
-thread.start()
+#thread = threading.Thread(target=delete_expired_desk_data)
+#thread.daemon = True
+#thread.start()
 
 
-#TODO: add deletion of the data
-def delete_desk_data(data):
-    """
-    Deletes the desk_data table with the provided data.
 
-    Args:
-        data (dict): JSON payload from the request.
-
-    Returns:
-        dict: Response data with the updated information.
-    """
-    try:
-        # Connect to the SQLite database
-        connection = sqlite3.connect('db.sqlite3')
-        cursor = connection.cursor()
-
-        # SQL query to update the desk_data table
-        query = '''
-            DELETE FROM desk_data WHERE studentID = ? AND desk_index = ?
-        '''
-
-        # Execute the query with parameter substitution
-        cursor.execute(query, (data['studentID'], data['desk_index']))
-
-        # Commit the changes
-        connection.commit()
-
-        # Close the connection
-        connection.close()
-
-        return {
-            'message': 'Data deleted successfully',
-            'data': data
-        }, 200
-
-    except sqlite3.Error as e:
-        print(f"Database error: {e}")
-        return {
-            'error': 'An error occurred while deleting the data'
-        }, 500
-
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        return {
-            'error': 'An unexpected error occurred'
-        }, 500
 
 def generate_custom_times():
     times = []
@@ -132,12 +94,24 @@ def update_desk_data(data):
 
         # SQL query to update the desk_data table
         query = '''
-            INSERT INTO desk_data (studentID, isEmpty, start_time, end_time, desk_index)
+            INSERT INTO desk_data (studentID, start_time, end_time, desk_index)
+            VALUES (?, ?, ?, ?)
         '''
 
         # Execute the query with parameter substitution
-        cursor.execute(query, (data['studentID'], data['isEmpty'], data['start_time'], data['end_time'], data['desk_index']))
+        cursor.execute(query, (132,data['startTime'], data['endTime'], data['selectedTable']))
+        # SQL query to select all elements from the desk_data table
+        select_query = '''
+            SELECT * FROM desk_data
+        '''
 
+        # Execute the select query
+        cursor.execute(select_query)
+        rows = cursor.fetchall()
+
+        # Print all elements in the desk_data table
+        for row in rows:
+            print(row)
         # Commit the changes
         connection.commit()
 
@@ -223,17 +197,20 @@ def handle_request(request):
             print(data)
             
             if data['type'] == 'table_reservation':
-                if is_desk_available(data['start_time'], data['end_time'], data['desk_index']):
+                print(data)
+                random_number = random.randint(1, 100)
+                print(f"Generated random number: {random_number}")
+                if is_desk_available(data['startTime'], data['endTime'], data['selectedTable']):
                     response_data, status_code = update_desk_data(data)
                     return JsonResponse(response_data, status=status_code)
                 else:
                     response_data, status_code = {'error': 'Desk not available'}, 400
                     return JsonResponse(response_data, status=status_code)
             elif data['type'] == 'filter_selection':
-                response_data, status_code = check_unavailable_desks(data['start_time']), 200
+                response_data, status_code = check_unavailable_desks(data['filterTime']), 200
                 return JsonResponse(response_data, status=status_code)
             elif data['type'] == 'check_table_by_index':
-                response_data, status_code = check_unavailable_times(data['desk_index']), 200
+                response_data, status_code = check_unavailable_times(data['selectedTable']), 200
                 return JsonResponse({"array": response_data}, status=status_code)
             else:
                 response_data, status_code = {'error': 'Invalid request type'}, 400
@@ -247,7 +224,8 @@ def handle_request(request):
             # Generic error handling
             return JsonResponse({'error': f'An unexpected error occurred: {str(e)}'}, status=500)
     elif request.method == 'GET':
-        return JsonResponse({'array': [5,6,7]}, status=200)
+        
+        return JsonResponse({'array': [5,7,9,13]}, status=200)
     else:
         return JsonResponse({'error': 'Only POST and GET requests are allowed'}, status=405)
     

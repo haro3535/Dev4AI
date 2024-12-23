@@ -15,7 +15,7 @@ cursor.execute('''DROP TABLE IF EXISTS desk_data;''')
 # Create the desk_data table
 cursor.execute('''
     CREATE TABLE desk_data (
-        desk_index INTEGER NOT NULL PRIMARY KEY,
+        desk_index INTEGER NOT NULL,
         studentID INTEGER DEFAULT NULL,
         start_time DATETIME DEFAULT NULL,
         end_time DATETIME DEFAULT NULL
