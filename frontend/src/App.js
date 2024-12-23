@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import OptionsMenu from "./OptionsMenu";
+import FilterModel from "./FilterModel";
 
 function App() {
   const [selectedTable, setSelectedTable] = useState(null);
@@ -207,10 +209,15 @@ function App() {
 
   return (
     <div className="container mt-5">
-      <div className="d-flex justify-content-between align-items-center">
-        <button className="btn btn-info" onClick={() => setShowFilterModal(true)}>
+      <div className="row">
+        <div className="col-2 text-center">
+          <OptionsMenu setShowFilterModal={setShowFilterModal}/>
+        </div>
+        <div className="col-10">
+        <div className="d-flex justify-content-between align-items-center">
+        {/* <button className="btn btn-info" onClick={() => setShowFilterModal(true)}>
           Filter by Time
-        </button>
+        </button> */}
         <h1 className="text-center flex-grow-1">Library Tables</h1>
         <div className="text-end">
           <h4>{currentTime}</h4>
@@ -336,46 +343,10 @@ function App() {
         </div>
       )}
 
-      {/* Filter Modal */}
-      {showFilterModal && (
-        <div
-          className="modal d-block"
-          tabIndex="-1"
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-          }}
-        >
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Filter by Time</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowFilterModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="d-flex flex-wrap">
-                  {hours.map((hour) => (
-                    <button
-                      key={hour}
-                      className="btn btn-outline-primary m-2"
-                      onClick={() => {
-                        setFilterTime(hour);
-                        handleFilterPostRequest(hour);
-                        setShowFilterModal(false);
-                      }}
-                    >
-                      {hour}:00
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <FilterModel showFilterModal={showFilterModal} setShowFilterModal={setShowFilterModal} 
+          setFilterTime={setFilterTime} setTakenTables={setTakenTables}/>
         </div>
-      )}
+      </div>
     </div>
   );
 }
